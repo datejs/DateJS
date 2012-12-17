@@ -1104,8 +1104,165 @@
 		    return false;
 		}
 	}
+  },
+  'Biasing': {
+    'biasing to the past, parse 1am': {
+      run: function() { this.date = Date.parse('12:01am', { bias: 'past' }) },
+      assert: function() { return this.date < new Date() }
+    },
+    'biasing to the past, parse 11pm': {
+      run: function() { this.date = Date.parse('11:59pm', { bias: 'past' }) },
+      assert: function() { return this.date < new Date() }
+    },
+    'biasing to the past, parse a time an hour ahead of now': {
+      run: function() {
+        this.nextHour = new Date().next().hour()
+        this.date = Date.parse(String(this.nextHour.getHours()) + ":" + String(this.nextHour.getMinutes()), { bias: 'past' })
+      },
+      assert: function() {
+        // The date is less than today
+        return this.date < new Date() &&
+          // and the hour is the hour we told it to be
+          this.date.getHours() == this.nextHour.getHours() &&
+          // and the day is yesterday
+          new Date().previous().day().same().day(this.date);
+      }
+    },
+
+    'biasing to the past, parse a time an hour behind now': {
+      run: function() {
+        this.nextHour = new Date().previous().hour()
+        this.date = Date.parse(String(this.nextHour.getHours()) + ":" + String(this.nextHour.getMinutes()), { bias: 'past' })
+      },
+      assert: function() {
+        // The date is less than today
+        return this.date < new Date() &&
+          // and the hour is the hour we told it to be
+          this.date.getHours() == this.nextHour.getHours() &&
+          // and the day is yesterday
+          new Date().same().day(this.date);
+      }
+    },
+
+    'biasing to the past, parse tomorrows day of the week to last week': {
+      run: function() {
+        this.nextDay = new Date().next().day()
+        this.date = Date.parse(this.nextDay.toString("dddd") + " at 3pm", { bias: 'past' })
+      },
+      assert: function() {
+        // The date is less than now
+        return this.date < new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15;
+      }
+    },
+
+    'biasing to the past, parse the day of the month tomorrow to last month': {
+      run: function() {
+        this.nextDay = new Date().next().day()
+        this.date = Date.parse(this.nextDay.toString("dS") + " at 3pm", { bias: 'past' })
+      },
+      assert: function() {
+        // The date is less than now
+        return this.date < new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15 &&
+          // make sure the day of the month is right
+          this.date.getDate() == this.nextDay.getDate();
+      }
+    },
+
+    'biasing to the past, parse the day and the month of next month to a year ago': {
+      run: function() {
+        this.nextMonth = new Date().next().month()
+        this.date = Date.parse(this.nextMonth.toString("MMMM dS") + " at 3pm", { bias: 'past' })
+      },
+      assert: function() {
+        // The date is less than now
+        return this.date < new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15 &&
+          // make sure the day of the month is right
+          this.date.getDate() == this.nextMonth.getDate();
+      }
+    },
+
+    'biasing to the future, parse a time an hour behind now': {
+      run: function() {
+        this.previousHour = new Date().previous().hour()
+        this.date = Date.parse(String(this.previousHour.getHours()) + ":" + String(this.previousHour.getMinutes()), { bias: 'future' })
+      },
+      assert: function() {
+        // The date is greater than now
+        return this.date > new Date() &&
+          // and the hour is the hour we told it to be
+          this.date.getHours() == this.previousHour.getHours() &&
+          // and the day is yesterday
+          new Date().next().day().same().day(this.date);
+      }
+    },
+
+    'biasing to the future, parse a time an hour ahead of now': {
+      run: function() {
+        this.nextHour = new Date().next().hour()
+        this.date = Date.parse(String(this.nextHour.getHours()) + ":" + String(this.nextHour.getMinutes()), { bias: 'future' })
+      },
+      assert: function() {
+        // The date is greater than now
+        return this.date > new Date() &&
+          // and the hour is the hour we told it to be
+          this.date.getHours() == this.nextHour.getHours() &&
+          // and the day is yesterday
+          new Date().same().day(this.date);
+      }
+    },
+
+
+    'biasing to the future, parse yesterdays day of the week to next week': {
+      run: function() {
+        this.previousDay = new Date().previous().day()
+        this.date = Date.parse(this.previousDay.toString("dddd") + " at 3pm", { bias: 'future' })
+      },
+      assert: function() {
+        // The date is greater than now
+        return this.date > new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15;
+      }
+    },
+
+    'biasing to the future, parse the day of the month for yesterday to next month': {
+      run: function() {
+        this.previousDay = new Date().previous().day()
+        this.query = this.previousDay.toString("dS") + " at 3pm"
+        this.date = Date.parse(this.query, { bias: 'future' })
+      },
+      assert: function() {
+        // The date is greater than now
+        return this.date > new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15 &&
+          // make sure the day of the month is right
+          this.date.getDate() == this.previousDay.getDate();
+      }
+    },
+
+    'biasing to the future, parse the day and the month of last month to a year from now': {
+      run: function() {
+        this.lastMonth = new Date().last().month()
+        this.query = this.lastMonth.toString("MMMM dS") + " at 3pm"
+        this.date = Date.parse(this.query, { bias: 'future' })
+      },
+      assert: function() {
+        // The date is greater than now
+        return this.date > new Date() &&
+          // and the hour is 3pm
+          this.date.getHours() == 15 &&
+          // make sure the day of the month is right
+          this.date.getDate() == this.lastMonth.getDate();
+      }
+    },
+
   }
-  
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );

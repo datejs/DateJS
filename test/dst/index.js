@@ -1,5 +1,5 @@
 Date.Specification = new Specification({
-'Daylight Saving Time': {
+'Fail': {
     setup: function() { },
 	'3/11/2007 1:59:59 + 1 second = 3/11/2007 3:00:00': {
       	run: function() { },
@@ -17,4 +17,3 @@ Date.Specification = new Specification({
    
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );

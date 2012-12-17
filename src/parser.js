@@ -499,6 +499,11 @@
                 this.second = Number(s); 
             }; 
         },
+        millisecond: function (s) {
+            return function () {
+                this.millisecond = Number(s);
+            };
+        },
         meridian: function (s) { 
             return function () { 
                 this.meridian = s.slice(0, 1).toLowerCase(); 
@@ -508,7 +513,12 @@
             return function () {
                 var n = s.replace(/[^\d\+\-]/g, "");
                 if (n.length) { 
-                    this.timezoneOffset = Number(n); 
+                    // parse offset into iso8601 parts
+                    var zp = n.match(/(\+|-)(\d{2})(\d{2})?/);
+                    // minute offsets must be converted to base of 100
+                    var mo = parseInt((parseInt(zp[3]) || 0) / .6).toString();
+                    mo = mo.length < 2 ? "0" + mo : mo;
+                    this.timezoneOffset = zp[1] + zp[2] + mo;
                 } else { 
                     this.timezone = s.toLowerCase(); 
                 }
@@ -590,6 +600,10 @@
                 this.second = 0;
             }
 
+            if(!this.millisecond) {
+                this.millisecond = 0;
+            }
+
             if (this.meridian && this.hour) {
                 if (this.meridian == "p" && this.hour < 12) {
                     this.hour = this.hour + 12;
@@ -602,12 +616,12 @@
                 throw new RangeError(this.day + " is not a valid value for days.");
             }
 
-            var r = new Date(this.year, this.month, this.day, this.hour, this.minute, this.second);
+            var r = new Date(this.year, this.month, this.day, this.hour, this.minute, this.second, this.millisecond);
 
-            if (this.timezone) { 
-                r.set({ timezone: this.timezone }); 
-            } else if (this.timezoneOffset) { 
-                r.set({ timezoneOffset: this.timezoneOffset }); 
+            if (this.timezone) {
+                r.set({ timezone: this.timezone });
+            } else if (this.timezoneOffset) {
+                r.setTimezoneOffset(this.timezoneOffset);
             }
             
             return r;
@@ -627,29 +641,34 @@
             
             var today = $D.today();
             
+            // For parsing: "now"
             if (this.now && !this.unit && !this.operator) { 
                 return new Date(); 
             } else if (this.now) {
                 today = new Date();
             }
             
-            var expression = !!(this.days && this.days !== null || this.orient || this.operator);
+            var expression = !!(this.days && this.days !== null || this.orient || this.operator || this.bias);
+            var realExpression = !!(this.days && this.days !== null || this.orient || this.operator);
             
             var gap, mod, orient;
-            orient = ((this.orient == "past" || this.operator == "subtract") ? -1 : 1);
+            orient = ((this.orient == "past" || this.operator == "subtract" || this.bias == "past") ? -1 : 1);
             
+            // For parsing: "last second", "next minute", "previous hour", "+5 seconds",
+            //   "-5 hours", "5 hours", "7 hours ago"
             if(!this.now && "hour minute second".indexOf(this.unit) != -1) {
                 today.setTimeToNow();
             }
 
-            if (this.month || this.month === 0) {
-                if ("year day hour minute second".indexOf(this.unit) != -1) {
-                    this.value = this.month + 1;
-                    this.month = null;
-                    expression = true;
-                }
+            // For parsing: "5 hours", "2 days", "3 years ago",
+            //    "7 days from now"
+            if ((this.month || this.month === 0) && ("year day hour minute second".indexOf(this.unit) != -1)) {
+                this.value = this.month + 1;
+                this.month = null;
+                expression = true;
             }
             
+            // For parsing: "monday @ 8pm", "12p on monday", "Friday"
             if (!expression && this.weekday && !this.day && !this.days) {
                 var temp = Date[this.weekday]();
                 this.day = temp.getDate();
@@ -659,35 +678,23 @@
                 this.year = temp.getFullYear();
             }
             
+            // For parsing: "prev thursday", "next friday", "last friday at 20:00"
             if (expression && this.weekday && this.unit != "month") {
                 this.unit = "day";
                 gap = ($D.getDayNumberFromName(this.weekday) - today.getDay());
                 mod = 7;
                 this.days = gap ? ((gap + (orient * mod)) % mod) : (orient * mod);
             }
-            
-            if (this.month && this.unit == "day" && this.operator) {
-                this.value = (this.month + 1);
-                this.month = null;
-            }
-       
-            if (this.value != null && this.month != null && this.year != null) {
-                this.day = this.value * 1;
-            }
-     
-            if (this.month && !this.day && this.value) {
-                today.set({ day: this.value * 1 });
-                if (!expression) {
-                    this.day = this.value * 1;
-                }
-            }
 
+            // For parsing: "t+1 m", "today + 1 month", "+1 month", "-5 months"
             if (!this.month && this.value && this.unit == "month" && !this.now) {
                 this.month = this.value;
                 expression = true;
             }
 
-            if (expression && (this.month || this.month === 0) && this.unit != "year") {
+            // For parsing: "last january", "prev march", "next july", "today + 1 month",
+            //   "+5 months"
+            if ((expression && !this.bias) && (this.month || this.month === 0) && this.unit != "year") {
                 this.unit = "month";
                 gap = (this.month - today.getMonth());
                 mod = 12;
@@ -695,19 +702,31 @@
                 this.month = null;
             }
 
-            if (!this.unit) { 
-                this.unit = "day"; 
+            // For parsing: "last monday", "last friday", "previous day",
+            //   "next week", "next month", "next year",
+            //   "today+", "+", "-", "yesterday at 4:00", "last friday at 20:00"
+            if (!this.value && realExpression) {
+                this.value = 1;
             }
-            
-            if (!this.value && this.operator && this.operator !== null && this[this.unit + "s"] && this[this.unit + "s"] !== null) {
-                this[this.unit + "s"] = this[this.unit + "s"] + ((this.operator == "add") ? 1 : -1) + (this.value||0) * orient;
-            } else if (this[this.unit + "s"] == null || this.operator != null) {
-                if (!this.value) {
-                    this.value = 1;
-                }
+
+            // For parsing: "15th at 20:15", "15th at 8pm", "today+", "t+5"
+            if (!this.unit && (!expression || this.value)) {
+              this.unit = "day";
+            }
+
+            // For parsing: "15th at 20:15", "15th at 8pm"
+            if ((!expression || this.bias) && this.value && (!this.unit || this.unit == "day") && !this.day) {
+              this.unit = "day";
+              this.day = this.value * 1
+            }
+
+            // For parsing: "last minute", "+5 hours", "previous month", "1 year ago tomorrow"
+            if (this.unit && (!this[this.unit + "s"] || this.operator)) {
                 this[this.unit + "s"] = this.value * orient;
             }
 
+            // For parsing: "July 8th, 2004, 10:30 PM", "07/15/04 6 AM",
+            //   "monday @ 8am", "10:30:45 P.M."
             if (this.meridian && this.hour) {
                 if (this.meridian == "p" && this.hour < 12) {
                     this.hour = this.hour + 12;
@@ -716,6 +735,7 @@
                 }
             }
             
+            // For parsing: "3 months ago saturday at 5:00 pm" (does not actually parse)
             if (this.weekday && !this.day && !this.days) {
                 var temp = Date[this.weekday]();
                 this.day = temp.getDate();
@@ -724,19 +744,45 @@
                 }
             }
             
+            // For parsing: "July 2004", "1997-07", "2008/10", "november"
             if ((this.month || this.month === 0) && !this.day) { 
                 this.day = 1; 
             }
             
+            // For parsing: "3 weeks" (does not actually parse)
             if (!this.orient && !this.operator && this.unit == "week" && this.value && !this.day && !this.month) {
                 return Date.today().setWeek(this.value);
             }
 
-            if (expression && this.timezone && this.day && this.days) {
-                this.day = this.days;
+            today.set(this);
+
+            if (this.bias) {
+              if (this.day) {
+                this.days = null
+              }
+
+              if (!this.day) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.days = 1 * orient
+                }
+              } else if (!this.month && !this.months) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.months = 1 * orient
+                }
+              } else if (!this.year) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.years = 1 * orient
+                }
+              }
+
+              expression = true;
             }
-            
-            return (expression) ? today.add(this) : today.set(this);
+
+            if (expression) {
+              today.add(this);
+            }
+
+            return today;
         }
     };
 
@@ -773,13 +819,13 @@
     g.mm = _.cache(_.process(_.rtoken(/^[0-5][0-9]/), t.minute));
     g.s = _.cache(_.process(_.rtoken(/^([0-5][0-9]|[0-9])/), t.second));
     g.ss = _.cache(_.process(_.rtoken(/^[0-5][0-9]/), t.second));
+    g.fff = _.cache(_.process(_.rtoken(/^[0-9]{3}(?!\d)/), t.millisecond));
     g.hms = _.cache(_.sequence([g.H, g.m, g.s], g.timePartDelimiter));
   
     // _.min(1, _.set([ g.H, g.m, g.s ], g._t));
     g.t = _.cache(_.process(g.ctoken2("shortMeridian"), t.meridian));
     g.tt = _.cache(_.process(g.ctoken2("longMeridian"), t.meridian));
-    g.z = _.cache(_.process(_.rtoken(/^((\+|\-)\s*\d\d\d\d)|((\+|\-)\d\d\:?\d\d)/), t.timezone));
-    g.zz = _.cache(_.process(_.rtoken(/^((\+|\-)\s*\d\d\d\d)|((\+|\-)\d\d\:?\d\d)/), t.timezone));
+    g.z = _.cache(_.process(_.rtoken(/^(Z|z)|((\+|\-)\s*\d\d\d\d)|((\+|\-)\d\d(\:?\d\d)?)/), t.timezone));
     
     g.zzz = _.cache(_.process(g.ctoken2("timezone"), t.timezone));
     g.timeSuffix = _.each(_.ignore(g.whiteSpace), _.set([ g.tt, g.zzz ]));
@@ -865,7 +911,7 @@
         _.any(
         // translate format specifiers into grammar rules
         _.process(
-        _.rtoken(/^(dd?d?d?|MM?M?M?|yy?y?y?|hh?|HH?|mm?|ss?|tt?|zz?z?)/), 
+        _.rtoken(/^(dd?d?d?|MM?M?M?|yy?y?y?|hh?|HH?|mm?|ss?|fff|tt?|zz?z?)/),
         function (fmt) { 
         if (g[fmt]) { 
             return g[fmt]; 
@@ -876,7 +922,7 @@
     ),
     // translate separator tokens into token rules
     _.process(
-    _.rtoken(/^[^dMyhHmstz]+/), // all legal separators 
+    _.rtoken(/^[^dMyhHmsftz]+/), // all legal separators
         function (s) { 
             return _.ignore(_.stoken(s)); 
         } 
@@ -919,11 +965,11 @@
 
 	// check for these formats first
     g._formats = g.formats([
-        "\"yyyy-MM-ddTHH:mm:ssZ\"",
-        "yyyy-MM-ddTHH:mm:ssZ",
+        "\"yyyy-MM-ddTHH:mm:ss.fffz\"",
+        "yyyy-MM-ddTHH:mm:ss.fffz",
+        "yyyy-MM-ddTHH:mm:ss.fff",
         "yyyy-MM-ddTHH:mm:ssz",
         "yyyy-MM-ddTHH:mm:ss",
-        "yyyy-MM-ddTHH:mmZ",
         "yyyy-MM-ddTHH:mmz",
         "yyyy-MM-ddTHH:mm",
         "ddd, MMM dd, yyyy H:mm:ss tt",
@@ -946,14 +992,18 @@
 	
 	// real starting rule: tries selected formats first, 
 	// then general purpose rule
-    g.start = function (s) {
+    g.start = function (s, o) {
         try { 
             var r = g._formats.call({}, s); 
             if (r[1].length === 0) {
                 return r; 
             }
         } catch (e) {}
-        return g._start.call({}, s);
+        if (!o) {
+          o = {}
+        }
+        o.input = s;
+        return g._start.call(o, s);
     };
 	
 	$D._parse = $D.parse;
@@ -1056,9 +1106,10 @@
     </code></pre>
      *
      * @param {String}   The string value to convert into a Date object [Required]
+     * @param {Object}   An object with any defaults for parsing [Optional]
      * @return {Date}    A Date object or null if the string cannot be converted into a Date.
      */
-    $D.parse = function (s) {
+    $D.parse = function (s, o) {
         var r = null; 
         if (!s) { 
             return null; 
@@ -1066,10 +1117,13 @@
         if (s instanceof Date) {
             return s;
         }
-        try { 
-            r = $D.Grammar.start.call({}, s.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1")); 
-        } catch (e) { 
-            return null; 
+        if (!o) {
+          o = {}
+        }
+        try {
+            r = $D.Grammar.start.call({}, s.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1"), o);
+        } catch (e) {
+            return null;
         }
         return ((r[1].length === 0) ? r[0] : null);
     };

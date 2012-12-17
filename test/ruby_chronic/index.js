@@ -203,16 +203,16 @@
       assert: function() { return Date.today().set({ hour: 18 }).equals( Date.parse('last night') ) }
     },
     'this second : The term "this" is not supported': {
-      run: function() { },
-      assert: function() { return new Date().equals( Date.parse('this second') ) }
+      run: function() { this.date = Date.parse('this second') },
+      assert: function() { return this.date !== null && new Date().equals(this.date) }
     },            
     'afternoon yesterday : The term "afternoon" is not supported': {
       run: function() { },
       assert: function() { return Date.today().add(1).day().set({ hour: 12 }).equals( Date.parse('afternoon yesterday') ) }
     },    
    'in 3 hours : problem with "in"': {
-      run: function() { },
-      assert: function() { return new Date().set({millisecond:0}).add(3).hours().equals(Date.parse('in 3 hours').set({millisecond:0})) }
+      run: function() { this.date = Date.parse('in 3 hours') },
+      assert: function() { return this.date !== null && new Date().set({millisecond:0}).add(3).hours().equals(this.date.set({millisecond:0})) }
     },
    '3 months ago saturday at 5:00 pm': {
       run: function() { },
@@ -245,4 +245,3 @@
  }       
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );
