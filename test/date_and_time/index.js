@@ -24,7 +24,7 @@
   },
   
   'Standard Patterns': {
-    setup: function() {  
+    setup: function() {
         this.today = new Date().clearTime();
         this.baseline = new Date(2004,6,1,22,30,0);
         this.baseline2 = new Date(2004,6,15,6,45,0);
@@ -37,9 +37,9 @@
     '2004, July 15, 6:45:00 AM : FullDateTimePattern [dddd, MMMM dd, yyyy h:mm:ss tt]': {
       run: function() { this.date =  Date.parse('2004, July 15, 6:45:00 AM') },
       assert: function() { return this.baseline2.equals( this.date ) }
-    }, 
+    },
 
-    
+
     'Thursday, July 01, 2004 : LongDatePattern [dddd, MMMM dd, yyyy]': {
       run: function() { this.date =  Date.parse('Thursday, July 01, 2004') },
       assert: function() { return this.baseline.clearTime().equals( this.date ) }
@@ -57,9 +57,9 @@
     '6:45:00 AM : LongTimePattern [h:mm:ss tt]': {
       run: function() { this.date =  Date.parse('6:45:00 AM') },
       assert: function() { return this.today.clone().set( { hour: 6, minute: 45 } ).equals( this.date ) }
-    },    
-      
-        
+    },
+
+
     'July 01 : MonthDayPattern [MMMM dd]': {
       run: function() { this.date =  Date.parse('July 01') },
       assert: function() { return this.today.clone().set( { month: 6, day: 1 } ).equals( this.date ) }
@@ -87,7 +87,7 @@
     '6:45 AM : ShortTimePattern [h:mm tt]': {
       run: function() { this.date =  Date.parse('6:45 AM') },
       assert: function() { return this.today.clone().set( { hour: 6, minute: 45 } ).equals( this.date ) }
-    },    
+    },
 
     '2004-07-01T22:30:00 : SortableDateTimePattern [yyyy-MM-ddTHH:mm:ss]': {
       run: function() { this.date =  Date.parse('2004-07-01T22:30:00') },
@@ -99,7 +99,7 @@
     },
     '11 Aug 2007 7:15:00 am EDT': {
       run: function() { this.date =  Date.parse('11 Aug 2007 7:15:00 am EDT') },
-      assert: function() { return new Date(2007,7,11,7,15,0).add(-2).hours().equals( this.date ) }
+      assert: function() { return new Date(2007,7,11,7,15,0).setTimezone('EDT').equals( this.date ) }
     },
     'Tue Nov 20 2007 08:00:00 UTC': {
       run: function() { this.date = Date.parse("Tue Nov 20 2007 08:00:00 UTC") },
@@ -701,10 +701,12 @@
         run: function() { },
         assert: function() { return new Date(1997,6,16,19,20,30).setTimezoneOffset('+0100').equals( Date.parseExact('1997-07-16T19:20:30+01:00', "yyyy-MM-ddTHH:mm:ssz") ) }
       },
-       '1997-07-16T19:20:30.45+01:00 : "YYYY-MM-DDThh:mm:ss.sTZD"': {
-        run: function() { },
-        assert: function() { return new Date(1997,6,16,19,20,30,45).setTimezoneOffset('+0100').equals( Date.parse('1997-07-16T19:20:30.45+01:00') ) }
-      }    
+  },
+  'Fail': {
+     '1997-07-16T19:20:30.45+01:00 : "YYYY-MM-DDThh:mm:ss.sTZD"': {
+      run: function() { },
+      assert: function() { return new Date(1997,6,16,19,20,30,45).setTimezoneOffset('+0100').equals( Date.parse('1997-07-16T19:20:30.45+01:00') ) }
+    }
   },
 
 'RFC 3339 Formats': {
@@ -737,4 +739,3 @@
   }      
 });
 
-$(document).ready( function() { Date.Specification.validate().show() });

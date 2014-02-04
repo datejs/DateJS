@@ -627,29 +627,33 @@
             
             var today = $D.today();
             
+            // For parsing: "now"
             if (this.now && !this.unit && !this.operator) { 
                 return new Date(); 
             } else if (this.now) {
                 today = new Date();
             }
             
-            var expression = !!(this.days && this.days !== null || this.orient || this.operator);
+            var expression = !!(this.days && this.days !== null || this.orient || this.operator || this.bias);
             
             var gap, mod, orient;
-            orient = ((this.orient == "past" || this.operator == "subtract") ? -1 : 1);
+            orient = ((this.orient == "past" || this.operator == "subtract" || this.bias == "past") ? -1 : 1);
             
+            // For parsing: "last second", "next minute", "previous hour", "+5 seconds",
+            //   "-5 hours", "5 hours", "7 hours ago"
             if(!this.now && "hour minute second".indexOf(this.unit) != -1) {
                 today.setTimeToNow();
             }
 
-            if (this.month || this.month === 0) {
-                if ("year day hour minute second".indexOf(this.unit) != -1) {
-                    this.value = this.month + 1;
-                    this.month = null;
-                    expression = true;
-                }
+            // For parsing: "5 hours", "2 days", "3 years ago",
+            //    "7 days from now"
+            if ((this.month || this.month === 0) && ("year day hour minute second".indexOf(this.unit) != -1)) {
+                this.value = this.month + 1;
+                this.month = null;
+                expression = true;
             }
             
+            // For parsing: "monday @ 8pm", "12p on monday", "Friday"
             if (!expression && this.weekday && !this.day && !this.days) {
                 var temp = Date[this.weekday]();
                 this.day = temp.getDate();
@@ -659,35 +663,23 @@
                 this.year = temp.getFullYear();
             }
             
+            // For parsing: "prev thursday", "next friday", "last friday at 20:00"
             if (expression && this.weekday && this.unit != "month") {
                 this.unit = "day";
                 gap = ($D.getDayNumberFromName(this.weekday) - today.getDay());
                 mod = 7;
                 this.days = gap ? ((gap + (orient * mod)) % mod) : (orient * mod);
             }
-            
-            if (this.month && this.unit == "day" && this.operator) {
-                this.value = (this.month + 1);
-                this.month = null;
-            }
-       
-            if (this.value != null && this.month != null && this.year != null) {
-                this.day = this.value * 1;
-            }
-     
-            if (this.month && !this.day && this.value) {
-                today.set({ day: this.value * 1 });
-                if (!expression) {
-                    this.day = this.value * 1;
-                }
-            }
 
+            // For parsing: "t+1 m", "today + 1 month", "+1 month", "-5 months"
             if (!this.month && this.value && this.unit == "month" && !this.now) {
                 this.month = this.value;
                 expression = true;
             }
 
-            if (expression && (this.month || this.month === 0) && this.unit != "year") {
+            // For parsing: "last january", "prev march", "next july", "today + 1 month",
+            //   "+5 months"
+            if ((expression && !this.bias) && (this.month || this.month === 0) && this.unit != "year") {
                 this.unit = "month";
                 gap = (this.month - today.getMonth());
                 mod = 12;
@@ -695,19 +687,31 @@
                 this.month = null;
             }
 
-            if (!this.unit) { 
-                this.unit = "day"; 
+            // For parsing: "last monday", "last friday", "previous day",
+            //   "next week", "next month", "next year",
+            //   "today+", "+", "-", "yesterday at 4:00", "last friday at 20:00"
+            if (!this.value && expression && !this.bias) {
+                this.value = 1;
             }
-            
-            if (!this.value && this.operator && this.operator !== null && this[this.unit + "s"] && this[this.unit + "s"] !== null) {
-                this[this.unit + "s"] = this[this.unit + "s"] + ((this.operator == "add") ? 1 : -1) + (this.value||0) * orient;
-            } else if (this[this.unit + "s"] == null || this.operator != null) {
-                if (!this.value) {
-                    this.value = 1;
-                }
+
+            // For parsing: "15th at 20:15", "15th at 8pm", "today+", "t+5"
+            if (!this.unit && (!expression || this.value)) {
+              this.unit = "day";
+            }
+
+            // For parsing: "15th at 20:15", "15th at 8pm"
+            if ((!expression || this.bias) && this.value && (!this.unit || this.unit == "day") && !this.day) {
+              this.unit = "day";
+              this.day = this.value * 1
+            }
+
+            // For parsing: "last minute", "+5 hours", "previous month", "1 year ago tomorrow"
+            if (this.unit && (!this[this.unit + "s"] || this.operator)) {
                 this[this.unit + "s"] = this.value * orient;
             }
 
+            // For parsing: "July 8th, 2004, 10:30 PM", "07/15/04 6 AM",
+            //   "monday @ 8am", "10:30:45 P.M."
             if (this.meridian && this.hour) {
                 if (this.meridian == "p" && this.hour < 12) {
                     this.hour = this.hour + 12;
@@ -716,6 +720,7 @@
                 }
             }
             
+            // For parsing: "3 months ago saturday at 5:00 pm" (does not actually parse)
             if (this.weekday && !this.day && !this.days) {
                 var temp = Date[this.weekday]();
                 this.day = temp.getDate();
@@ -724,19 +729,45 @@
                 }
             }
             
+            // For parsing: "July 2004", "1997-07", "2008/10", "november"
             if ((this.month || this.month === 0) && !this.day) { 
                 this.day = 1; 
             }
             
+            // For parsing: "3 weeks" (does not actually parse)
             if (!this.orient && !this.operator && this.unit == "week" && this.value && !this.day && !this.month) {
                 return Date.today().setWeek(this.value);
             }
-
-            if (expression && this.timezone && this.day && this.days) {
-                this.day = this.days;
-            }
             
-            return (expression) ? today.add(this) : today.set(this);
+            today.set(this);
+
+            if (this.bias) {
+              if (this.day) {
+                this.days = null
+              }
+
+              if (!this.day) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.days = 1 * orient
+                }
+              } else if (!this.month && !this.months) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.months = 1 * orient
+                }
+              } else if (!this.year) {
+                if ((this.bias == "past" && today > new Date()) || (this.bias == "future" && today < new Date())) {
+                  this.years = 1 * orient
+                }
+              }
+
+              expression = true;
+            }
+
+            if (expression) {
+              today.add(this);
+            }
+
+            return today;
         }
     };
 
@@ -946,14 +977,18 @@
 	
 	// real starting rule: tries selected formats first, 
 	// then general purpose rule
-    g.start = function (s) {
+    g.start = function (s, o) {
         try { 
             var r = g._formats.call({}, s); 
             if (r[1].length === 0) {
                 return r; 
             }
         } catch (e) {}
-        return g._start.call({}, s);
+        if (!o) {
+          o = {}
+        }
+        o.input = s;
+        return g._start.call(o, s);
     };
 	
 	$D._parse = $D.parse;
@@ -1056,9 +1091,10 @@
     </code></pre>
      *
      * @param {String}   The string value to convert into a Date object [Required]
+     * @param {Object}   An object with any defaults for parsing [Optional]
      * @return {Date}    A Date object or null if the string cannot be converted into a Date.
      */
-    $D.parse = function (s) {
+    $D.parse = function (s, o) {
         var r = null; 
         if (!s) { 
             return null; 
@@ -1066,10 +1102,13 @@
         if (s instanceof Date) {
             return s;
         }
-        try { 
-            r = $D.Grammar.start.call({}, s.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1")); 
-        } catch (e) { 
-            return null; 
+        if (!o) {
+          o = {}
+        }
+        try {
+            r = $D.Grammar.start.call({}, s.replace(/^\s*(\S*(\s+\S+)*)\s*$/, "$1"), o);
+        } catch (e) {
+            return null;
         }
         return ((r[1].length === 0) ? r[0] : null);
     };

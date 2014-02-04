@@ -28,6 +28,10 @@
     'tom = "Tomorrow"': {
       run: function() { },
       assert: function() { return Date.today().add(1).day().equals(Date.parse('tom')) }
+    },
+    'now': {
+      run: function() { this.date = Date.parse('now') },
+      assert: function() { return new Date().set({millisecond: 0}).equals(this.date.set({millisecond: 0})) }
     }
   },
 'Relative Days': {
@@ -1088,4 +1092,3 @@
   }   
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );

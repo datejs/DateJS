@@ -423,10 +423,11 @@
                 return true;
             }
             
-            if (j.substring(j.length - 1) != "s") {
-                j += "s"; 
+            l = j
+            if (l.substring(l.length - 1) != "s") {
+                l += "s";
             }
-            return this["add" + j](this._orient);
+            return this["add" + l](this._orient);
         };
     };
     

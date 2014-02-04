@@ -48,10 +48,6 @@
       run: function() { },
       assert: function() { return Date.today().set({ day: 25 }).equals( Date.parse('25th') ) }
     },
-    'End of month : Not supported currently.': {
-      run: function() { },
-      assert: function() { return Date.today().moveToLastDayOfMonth().equals( Date.parse('End of month') ) }
-    },  
     'Friday': {
       run: function() { },
       assert: function() { return Date.friday().equals( Date.parse('Friday') ) }
@@ -90,6 +86,12 @@
       },
       assert: function() { return Date.today().add(2).days().equals( this.date ) }
     },
+  },
+  'Fail': {
+    'End of month : Not supported currently.': {
+      run: function() { },
+      assert: function() { return Date.today().moveToLastDayOfMonth().equals( Date.parse('End of month') ) }
+    },
     '3 weeks : Datejs uses "+3 weeks."': {
       run: function() { 
         this.date = Date.parse('3 weeks'); 
@@ -97,7 +99,7 @@
       },
       assert: function() { return Date.today().add(3).weeks().equals( this.date ) }
     }
+
   }
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );

@@ -147,6 +147,14 @@
     'sunday at 20:15': {
       run: function() { },
       assert: function() { return Date.sunday().set({ hour: 20, minute: 15 }).equals( Date.parse('sunday at 20:15') ) }
+    },
+    '15th at 20:15': {
+      run: function() { },
+      assert: function() { return Date.today().set({ day: 15, hour: 20, minute: 15 }).equals( Date.parse('15th at 20:15') ) }
+    },
+    '15th at 8pm': {
+      run: function() { },
+      assert: function() { return Date.today().set({ day: 15, hour: 20 }).equals( Date.parse('15th at 8pm') ) }
     }
   },
 'on': {
@@ -234,4 +242,3 @@
   }      
 });
 
-$(document).ready( function() { Date.Specification.validate().show() } );
