@@ -1,7 +1,7 @@
 {
     "name": "Datejs",
     "description": "Datejs is an open source JavaScript Date library for parsing, formatting and processing.",
-    "version": "1.0",
+    "version": "1.0.0-Alpha.1",
     "main": "path/to/main.css",
     "ignore": [
         "test",
