@@ -412,7 +412,7 @@
 
     // private
     var validate = function (n, min, max, name) {
-        if (typeof n == "undefined") {
+        if (typeof n == "undefined" || n == null) {
             return false;
         } else if (typeof n != "number") {
             throw new TypeError(n + " is not a Number."); 

@@ -699,9 +699,13 @@
                 this.unit = "day"; 
             }
             
-            if (!this.value && this.operator && this.operator !== null && this[this.unit + "s"] && this[this.unit + "s"] !== null) {
+            if (!expression && this.value && this.unit == "day" && !this.day) {
+              this.day = this.value * orient;
+            }
+
+            if (!this.value && this.operator && this[this.unit + "s"]) {
                 this[this.unit + "s"] = this[this.unit + "s"] + ((this.operator == "add") ? 1 : -1) + (this.value||0) * orient;
-            } else if (this[this.unit + "s"] == null || this.operator != null) {
+            } else if (!this[this.unit + "s"] || this.operator) {
                 if (!this.value) {
                     this.value = 1;
                 }
@@ -736,7 +740,13 @@
                 this.day = this.days;
             }
             
-            return (expression) ? today.add(this) : today.set(this);
+            today.set(this);
+
+            if (expression) {
+              today.add(this);
+            }
+
+            return today;
         }
     };
 
