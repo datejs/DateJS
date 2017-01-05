@@ -263,7 +263,7 @@ Date.today().addYears(1)               // Adds 1 year.
 Date.today().addMonths(-2)             // Subtracts 2 months.
 Date.today().addWeeks(1)               // Adds 1 week.
 Date.today().addDays(4)                // Adds 4 days.
-Date.today().addHours(6)               // Add 6 hours.
+Date.today().addHours(6)               // Adds 6 hours.
 Date.today().addMinutes(-30)           // Subtracts 30 minutes.
 Date.today().addSeconds(15)            // Adds 15 seconds.
 Date.today().addMilliseconds(200)      // Adds 200 milliseconds.
