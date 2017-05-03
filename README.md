@@ -25,7 +25,7 @@ Within the `/build/` folder, a date.js file has been created for each of the 150
 <script type="text/javascript" src="date-de-DE.js"></script>
 ```
 
-Before minification, the Datejs library is contained in five (6) separate JavaScript files. Each of the files can be included individually. 
+Before minification, the Datejs library is contained in five (5) separate JavaScript files. Each of the files can be included individually. 
 
 The following is a list of precedence *if including the files individually*. Each file requires the one above it. For example, `core.js` requires a `CultureInfo` file. 
 
