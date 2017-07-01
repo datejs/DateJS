@@ -16,12 +16,13 @@ class config {
         this.config = {
             context: path.normalize(__dirname),
             entry: {
-                [name]: path.normalize(__dirname + '/src/core.js'),
+                [name]: path.normalize(__dirname + '/src/Date.js'),
             },
             output: {
                 path: path.normalize(__dirname + '/dist'),
                 filename,
                 library: 'Datejs',
+                libraryExport: 'default',
                 libraryTarget: 'umd',
             },
             devtool: 'source-map',
@@ -34,13 +35,14 @@ class config {
                         options: {
                             transforms: {
                                 modules: false,
+                                dangerousForOf: true,
                             },
                         },
                     },
                 ],
             },
-            plugins: plugins,
-        }
+            plugins,
+        };
     }
 }
 
