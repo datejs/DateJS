@@ -37,7 +37,7 @@ export default class Datejs extends Date {
      * @return {Datejs} this
      */
     setTimeToNow() {
-        const n = new this.constructor();
+        const n = new Datejs();
         this.setHours(n.getHours());
         this.setMinutes(n.getMinutes());
         this.setSeconds(n.getSeconds());
@@ -50,7 +50,7 @@ export default class Datejs extends Date {
      * @return {Datejs} The current date.
      */
     static today() {
-        return new this.constructor().clearTime();
+        return new Datejs().clearTime();
     }
 
     /**
@@ -131,7 +131,7 @@ export default class Datejs extends Date {
      * @return {Number} The number of days in the month.
      */
     static getDaysInMonth(year, month) {
-        return [31, (this.constructor.isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
+        return [31, (Datejs.isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
     }
 
     static getTimezoneAbbreviation(offset) {
@@ -157,7 +157,7 @@ export default class Datejs extends Date {
      * @return {Datejs} A new Date instance
      */
     clone() {
-        return new this.constructor(this);
+        return new Datejs(this);
     }
 
     /**
@@ -174,7 +174,7 @@ export default class Datejs extends Date {
      * @param  {Date=}   date - Date object to compare. If no date to compare, new Date() [now] is used.
      * @return {Boolean} true if dates are equal. false if they are not equal.
      */
-    equals(date = new this.constructor()) {
+    equals(date = new Datejs()) {
         return Date.equals(this, date);
     }
 
@@ -193,7 +193,7 @@ export default class Datejs extends Date {
      * @param  {Date=}    date - Date object to compare. If no date to compare, new Date() ("now") is used.
      * @return {Boolean} true if this date instance is greater than the date to compare to (or "now"), otherwise false.
      */
-    isAfter(date = new this.constructor()) {
+    isAfter(date = new Datejs()) {
         return this.compareTo(date) === 1;
     }
 
@@ -202,7 +202,7 @@ export default class Datejs extends Date {
      * @param  {Date=}   date - Date object to compare. If no date to compare, new Date() ("now") is used.
      * @return {Boolean} true if this date instance is less than the date to compare to (or "now").
      */
-    isBefore(date = new this.constructor()) {
+    isBefore(date = new Datejs()) {
         return this.compareTo(date) === -1;
     }
 
@@ -220,7 +220,7 @@ export default class Datejs extends Date {
      * @param  {Datejs=} date - Date object to compare. If no date to compare, the current Date ("now") is used.
      * @return {Boolean} true if this Date instance occurs on the same Day as the supplied 'date'.
      */
-    isSameDay(date = new this.constructor()) {
+    isSameDay(date = new Datejs()) {
         return this.clearTime(true).equals(date.clearTime(true));
     }
 
@@ -288,7 +288,7 @@ export default class Datejs extends Date {
     addMonths(value) {
         this.setDate(1);
         this.setMonth(this.getMonth() + (value << 0));
-        this.setDate(Math.min(this.getDate(), this.constructor.getDaysInMonth(this.getFullYear(), this.getMonth())));
+        this.setDate(Math.min(this.getDate(), Datejs.getDaysInMonth(this.getFullYear(), this.getMonth())));
         return this;
     }
 
