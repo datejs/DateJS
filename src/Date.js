@@ -1,3 +1,6 @@
+import * as utils from './core/utils';
+import validate from './core/validator';
+
 /** @extends Date */
 export default class Datejs extends Date {
 
@@ -305,23 +308,117 @@ export default class Datejs extends Date {
      Date.today().add({ days: 1, months: 1 })
      new Date().add({ years: -1 })
      </code></pre>
-     * @param  {Object.<Number>} config - Configuration object containing attributes (months, days, etc.)
-     * @return {Datejs}          this
+     * @param  {Number=} milliseconds
+     * @param  {Number=} seconds
+     * @param  {Number=} minutes
+     * @param  {Number=} hours
+     * @param  {Number=} weeks
+     * @param  {Number=} months
+     * @param  {Number=} years
+     * @param  {Number=} days
+     * @return {Datejs}  this
      */
-    add(config) {
-        if (typeof config === "number") {
-            this._orient = config;
-            return this;
+    add({ milliseconds, seconds, minutes, hours, weeks, months, years, days }) {
+        if (milliseconds) this.addMilliseconds(milliseconds);
+        if (seconds) this.addSeconds(seconds);
+        if (minutes) this.addMinutes(minutes);
+        if (hours) this.addHours(hours);
+        if (weeks) this.addWeeks(weeks);
+        if (months) this.addMonths(months);
+        if (years) this.addYears(years);
+        if (days) this.addDays(days);
+
+        return this;
+    }
+
+    /**
+     * Get the week number. Week one (1) is the week which contains the first Thursday of the year. Monday is considered the first day of the week.
+     * The .getWeek() function does NOT convert the date to UTC. The local datetime is used. Please use .getISOWeek() to get the week of the UTC converted date.
+     * @return {Number} 1 to 53
+     */
+    getWeek() {
+        const year  = this.getFullYear();
+        const month = this.getMonth();
+        const date  = this.getDate();
+
+        return utils.getWeek(year, month, date);
+    }
+
+    /**
+     * Get the ISO 8601 week number. Week one ("01") is the week which contains the first Thursday of the year. Monday is considered the first day of the week.
+     * The .getISOWeek() function does convert the date to it's UTC value. Please use .getWeek() to get the week of the local date.
+     * @return {String} "01" to "53"
+     */
+    getISOWeek() {
+        const year  = this.getUTCFullYear();
+        const month = this.getUTCMonth() + 1;
+        const date  = this.getUTCDate();
+
+        return utils.zeroPad(utils.getWeek(year, month, date));
+    }
+
+    /**
+     * Set the value of year, month, day, hour, minute, second, millisecond of date instance using given configuration object.
+     * Example
+     <pre><code>
+     Date.today().set( { day: 20, month: 1 } )
+
+     new Date().set( { millisecond: 0 } )
+     </code></pre>
+     *
+     * @param  {Number=} millisecond
+     * @param  {Number=} second
+     * @param  {Number=} minute
+     * @param  {Number=} hour
+     * @param  {Number=} month
+     * @param  {Number=} year
+     * @param  {Number=} day
+     * @param  {Number=} timezone
+     * @param  {Number=} timezoneOffset
+     * @param  {Number=} week
+     * @return {Date}    this
+     */
+    set({ millisecond, second, minute, hour, month, year, day, timezone, timezoneOffset, week }) {
+        if (validate.millisecond(millisecond)) {
+            this.addMilliseconds(millisecond - this.getMilliseconds());
         }
 
-        if (config.milliseconds) this.addMilliseconds(config.milliseconds);
-        if (config.seconds) this.addSeconds(config.seconds);
-        if (config.minutes) this.addMinutes(config.minutes);
-        if (config.hours) this.addHours(config.hours);
-        if (config.weeks) this.addWeeks(config.weeks);
-        if (config.months) this.addMonths(config.months);
-        if (config.years) this.addYears(config.years);
-        if (config.days) this.addDays(config.days);
+        if (validate.second(second)) {
+            this.addSeconds(second - this.getSeconds());
+        }
+
+        if (validate.minute(minute)) {
+            this.addMinutes(minute - this.getMinutes());
+        }
+
+        if (validate.hour(hour)) {
+            this.addHours(hour - this.getHours());
+        }
+
+        if (validate.month(month)) {
+            this.addMonths(month - this.getMonth());
+        }
+
+        if (validate.year(year)) {
+            this.addYears(year - this.getFullYear());
+        }
+
+        /* day has to go last because you can't validate the day without first knowing the month */
+        if (validate.day(day, this.getFullYear(), this.getMonth())) {
+            this.addDays(day - this.getDate());
+        }
+
+        if (timezone) {
+            this.setTimezone(timezone);
+        }
+
+        if (timezoneOffset) {
+            this.setTimezoneOffset(timezoneOffset);
+        }
+
+        if (week && validate(week, 0, 53, "week")) {
+            this.setWeek(week);
+        }
 
         return this;
     }

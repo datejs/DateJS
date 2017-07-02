@@ -35,6 +35,7 @@ class config {
                         options: {
                             transforms: {
                                 modules: false,
+                                // forOf: false,
                                 dangerousForOf: true,
                             },
                         },
